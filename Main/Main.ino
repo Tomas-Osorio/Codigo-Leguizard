@@ -103,77 +103,119 @@ void loop() {
     }
 }
 
-/*   
-    Direccion:
-    numero que llega | posicion horaria
-            1        =      12
-            2        =      1.5
-            3        =      3
-            4        =      4.5
-            5        =      6
-            6        =      7.5
-            7        =      9
-            8        =      10.5
-    
-   delay(5000);
-   switch (direccion)
-   {
-   case 1:
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+/*#include <MotorDriver.h>
+#include <QTR.h>
 
-    case 2: // Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+// Motor instances
+MotorDriver motorFL(39);  // Front Left
+MotorDriver motorFR(45);  // Front Right
+MotorDriver motorBL(47);  // Back Left
+MotorDriver motorBR(9);   // Back Right
 
-    case 3: // Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+// QTR sensor instance
+QTR qtrSensors;
 
-    case 4: // Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+// Sensor pins
+const int sensorFL = 1; // Front Left
+const int sensorFR = 2; // Front Right
+const int sensorBL = 4; // Back Left
+const int sensorBR = 5; // Back Right
 
-    case 5: 
-    motors.drive(motors.M1, -50);
-    motors.drive(motors.M2, -50);
-    motors.drive(motors.M3, -50);
-    motors.drive(motors.M4, -50);
-    break;
+void setup() {
+  Serial.begin(115200);
 
-    case 6:// Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+  // Initialize motors
+  motorFL.init();
+  motorFR.init();
+  motorBL.init();
+  motorBR.init();
 
-    case 7: // Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
+  // Initialize sensors
+  qtrSensors.init(sensorFL, sensorFR, sensorBL, sensorBR);
 
-    case 8: // Falta hacer
-    motors.drive(motors.M1, 50);
-    motors.drive(motors.M2, 50);
-    motors.drive(motors.M3, 50);
-    motors.drive(motors.M4, 50);
-    break;
-   
-   default:
-   return 0;
-    break; */
+  // Indicate ready status with LED
+  pinMode(12, OUTPUT);
+  pinMode(11, OUTPUT);
+  digitalWrite(12, HIGH);
+  delay(250);
+  digitalWrite(12, LOW);
+  delay(250);
+  digitalWrite(12, HIGH);
+  delay(250);
+}
+
+void loop() {
+  // Check each sensor's reading
+  bool edgeFL = qtrSensors.medir(sensorFL);  // Front Left
+  bool edgeFR = qtrSensors.medir(sensorFR);  // Front Right
+  bool edgeBL = qtrSensors.medir(sensorBL);  // Back Left
+  bool edgeBR = qtrSensors.medir(sensorBR);  // Back Right
+
+  // State control based on sensors
+  if (!edgeFL && !edgeFR && !edgeBL && !edgeBR) {
+    // All sensors detect safe ground
+    EstadoNormal();
+  } else if (!edgeFR) {
+    EstadoQTR_FR_A();
+    delay(400);
+    EstadoQTR_FR_B();
+  } else if (!edgeFL) {
+    EstadoQTR_FL_A();
+    delay(400);
+    EstadoQTR_FL_B();
+  } else if (!edgeBL || !edgeBR) {
+    EstadoEnemigoEncontrado();
+  } else {
+    EstadoCero();
+  }
+}
+
+void EstadoNormal() {
+  motorFL.drive(50);
+  motorFR.drive(50);
+  motorBL.drive(50);
+  motorBR.drive(50);
+}
+
+void EstadoCero() {
+  motorFL.drive(0);
+  motorFR.drive(0);
+  motorBL.drive(0);
+  motorBR.drive(0);
+}
+
+void EstadoEnemigoEncontrado() {
+  motorFL.drive(50);
+  motorFR.drive(50);
+  motorBL.drive(50);
+  motorBR.drive(50);
+}
+
+void EstadoQTR_FL_A() {
+  motorFL.drive(-50);
+  motorFR.drive(50);
+  motorBL.drive(-50);
+  motorBR.drive(50);
+}
+
+void EstadoQTR_FL_B() {
+  motorFL.drive(50);
+  motorFR.drive(-50);
+  motorBL.drive(50);
+  motorBR.drive(-50);
+}
+
+void EstadoQTR_FR_A() {
+  motorFL.drive(50);
+  motorFR.drive(-50);
+  motorBL.drive(50);
+  motorBR.drive(-50);
+}
+
+void EstadoQTR_FR_B() {
+  motorFL.drive(-50);
+  motorFR.drive(50);
+  motorBL.drive(-50);
+  motorBR.drive(50);
+}
+*/
