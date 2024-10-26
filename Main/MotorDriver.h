@@ -10,6 +10,7 @@ class MotorDriver {
     void drive(int value);
   private:
     uint8_t _pin;
+    int _currentSpeed; // Add this to track the current speed
 };
 
 #endif
