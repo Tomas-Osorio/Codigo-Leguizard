@@ -1,4 +1,45 @@
-#include <Nextion.h>
+
+/*Este codigo qtr anda:
+#include <QTRSensors.h>
+
+QTRSensors qtr;  // Create an instance of QTRSensors
+
+const uint8_t sensorPins[] = {4, 5, 1, 2}; // Pins for Top Left, Bottom Left, Top Right, Bottom Right
+
+void setup() {
+    Serial.begin(115200);
+
+    // Initialize the QTR sensors with the specified pins
+    qtr.setTypeRC();  // Sets sensor type to RC for digital sensors
+    qtr.setSensorPins(sensorPins, sizeof(sensorPins) / sizeof(sensorPins[0]));
+}
+
+void loop() {
+    // Array to store readings from each sensor
+    uint16_t sensorValues[4];
+    
+    // Read sensor values
+    qtr.read(sensorValues);
+
+    // Print the results to the Serial Monitor
+    Serial.print("Top Left (Pin 4): ");
+    Serial.println(sensorValues[0] > 500 ? "White" : "Black");
+
+    Serial.print("Bottom Left (Pin 5): ");
+    Serial.println(sensorValues[1] > 500 ? "White" : "Black");
+
+    Serial.print("Top Right (Pin 1): ");
+    Serial.println(sensorValues[2] > 500 ? "White" : "Black");
+
+    Serial.print("Bottom Right (Pin 2): ");
+    Serial.println(sensorValues[3] > 500 ? "White" : "Black");
+
+    // Add a delay for readability
+    delay(500);
+}
+
+/*Codigo pantalla
+/*#include <Nextion.h>
 #include "ButtonToggle.h"
 
 // Define the button on the Nextion screen
