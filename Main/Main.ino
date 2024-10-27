@@ -1,3 +1,37 @@
+#include "VL.h"
+
+VL vlSensors;
+
+void setup() {
+    Serial.begin(115200);
+    vlSensors.init();
+}
+
+void loop() {
+    int* distances = vlSensors.measure();
+    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
+    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
+    delay(500);
+}
+/*Anda solo un Vl
+#include "VL.h"
+
+VL vlSensors;
+
+void setup() {
+    Serial.begin(115200);
+    vlSensors.init();
+}
+
+void loop() {
+    int* distances = vlSensors.measure();
+    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
+    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
+    delay(500);
+}
+*/
+
+/*Expicacion de los vl para chatgpt: i need you to make me a program that search the direction i2c of 2 vl5320x laser sensors.Their xshut pin si conecte to pins out 5 and 6 from a pin expansor called PCF8574.My I2c pins not only are connected to the vl sda and scl they also are conected to this expansor. So i nee a program to read this sensors measures and define the one in the pin 6 right sensor and the one in pin 5 left sensor. I need to know the measures they have specifically its essential. Im working with an esp32 s3 wroom u1 n8r8 and im using this custom libraries:
 
 /*Este codigo qtr anda:
 #include <QTRSensors.h>
