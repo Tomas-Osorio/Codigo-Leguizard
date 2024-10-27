@@ -1,15 +1,17 @@
-/* #ifndef PANTALLA_H
-#define PANTALLA_H
+#ifndef ButtonToggle_h
+#define ButtonToggle_h
 
-#include <Arduino.h>
+#include <Nextion.h>
 
-class  PANTALLA {
+class ButtonToggle {
 public:
-    PANTALLA(); 
-    int init(); 
-    void SendData(); //Dentro de los parentesis van todos los valores a mostrar
+    ButtonToggle(NexButton* button);
+    void toggleValue();
+    void checkTouch();
+
+private:
+    NexButton* _button;
+    bool _state;
 };
 
 #endif
-
-// TUTORIAL - https://www.youtube.com/watch?v=OcN34M_JUy8 */

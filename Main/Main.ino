@@ -1,4 +1,22 @@
-#include "Logger.h"
+#include <Nextion.h>
+#include "ButtonToggle.h"
+
+// Define the button on the Nextion screen
+NexButton button = NexButton(0, 1, "b0");  // Page 0, ID 1, object name "b0"
+ButtonToggle buttonToggle(&button);
+
+void setup() {
+    Serial.begin(9600);
+    nexInit();  // Initialize Nextion
+}
+
+void loop() {
+    nexLoop(nex_listen_list);  // Listen for button events
+    buttonToggle.checkTouch();
+}
+
+/*CODIGO BASICO PERO TIENE LOGGER Y OTA
+/*#include "Logger.h"
 #include "OTAPrograming.h"
 #include "MotorDriver.h"
 #include "QTR.h"
@@ -102,6 +120,10 @@ void loop() {
         disableWiFi();              // Disable WiFi if in Fight mode or not in devMode
     }
 }
+
+
+Otro ejemplo pero mas desarrollado BASADO EN LUCA
+
 
 /*#include <MotorDriver.h>
 #include <QTR.h>
