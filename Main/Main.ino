@@ -71,137 +71,11 @@ void loop() {
     // Add a delay for readability
     delay(500);
 }
-
-/*Codigo pantalla
-/*#include <Nextion.h>
-#include "ButtonToggle.h"
-
-// Define the button on the Nextion screen
-NexButton button = NexButton(0, 1, "b0");  // Page 0, ID 1, object name "b0"
-ButtonToggle buttonToggle(&button);
-
-void setup() {
-    Serial.begin(9600);
-    nexInit();  // Initialize Nextion
-}
-
-void loop() {
-    nexLoop(nex_listen_list);  // Listen for button events
-    buttonToggle.checkTouch();
-}
-
-/*CODIGO BASICO PERO TIENE LOGGER Y OTA
-/*#include "Logger.h"
-#include "OTAPrograming.h"
-#include "MotorDriver.h"
-#include "QTR.h"
-
-// Motor declarations
-MotorDriver M1(9);
-MotorDriver M2(47);
-MotorDriver M3(45);
-MotorDriver M4(39);
-
-// Logger declaration
-Logger logger;
-
-// OTA declaration
-OTA ota;
-
-// Sensor declaration
-QTR sensor;
-
-// Global variables for modes
-bool devMode = true;
-bool Fight = false;
-int Log = 0; // 0 = NADA, 1 = ERRORES, 2 = TODO
-
-// Sensor pin definitions
-const int topLeftPin = A0;
-const int topRightPin = A1;
-const int bottomLeftPin = A2;
-const int bottomRightPin = A3;
-
-// Movement state
-enum MovementState { FORWARD, BACKWARD };
-MovementState currentMovement = FORWARD;
-
-// Function to disable WiFi when not in use
-void disableWiFi() {
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-    btStop();
-}
-
-// Function to initialize motors, sensors, logger, and OTA
-void initializeComponents() {
-    // Initialize motors
-    M1.init();
-    M2.init();
-    M3.init();
-    M4.init();
-
-    // Initialize sensors
-    sensor.init(topLeftPin, topRightPin, bottomLeftPin, bottomRightPin);
-
-    // Initialize logger
-    logger.init(Fight, devMode, true, "SSID", "PASSWORD");
-
-    // Initialize OTA
-    const char* ssid = "SSID";
-    const char* password = "PASSWORD";
-    if (ota.init(Fight, devMode, Log, ssid, password) == 0) {
-        Serial.println("OTA Initialized");
-    } else {
-        Serial.println("OTA Initialization Failed");
-    }
-}
-
-// Function to control motors based on sensor readings
-void controlMotorsBasedOnSensors() {
-    // Get sensor readings
-    bool topLeftDetected = sensor.medir(topLeftPin);
-    bool topRightDetected = sensor.medir(topRightPin);
-    bool bottomLeftDetected = sensor.medir(bottomLeftPin);
-    bool bottomRightDetected = sensor.medir(bottomRightPin);
-
-    // Update movement state based on any sensor detection
-    if (currentMovement == FORWARD && (topLeftDetected || topRightDetected)) {
-        currentMovement = BACKWARD;  // Switch to backward if any top sensor detects something
-        logger.logMessage(Fight, devMode, Log, 1, "Switching to BACKWARD");
-    } else if (currentMovement == BACKWARD && (bottomLeftDetected || bottomRightDetected)) {
-        currentMovement = FORWARD;   // Switch to forward if any bottom sensor detects something
-        logger.logMessage(Fight, devMode, Log, 1, "Switching to FORWARD");
-    }
-
-    // Set motor speed based on current movement state
-    int motorValue = (currentMovement == FORWARD) ? 50 : -50;
-    M1.drive(motorValue);
-    M2.drive(motorValue);
-    M3.drive(motorValue);
-    M4.drive(motorValue);
-}
-
-void setup() {
-    Serial.begin(115200);
-    initializeComponents();  // Initialize all components
-}
-
-void loop() {
-    controlMotorsBasedOnSensors();  // Monitor sensors and control motors
-    ota.check();                    // Handle OTA updates
-    delay(50);                      // Adjust delay as needed
-    if (Fight || !devMode) {
-        disableWiFi();              // Disable WiFi if in Fight mode or not in devMode
-    }
-}
-
-
-Otro ejemplo pero mas desarrollado BASADO EN LUCA
-
-
-/*#include <MotorDriver.h>
+MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO
+#include <MotorDriver.h>
 #include <QTR.h>
+#include <Logger.h>
+#include <OTAPrograming.h>
 
 // Motor instances
 MotorDriver motorFL(39);  // Front Left
@@ -212,11 +86,20 @@ MotorDriver motorBR(9);   // Back Right
 // QTR sensor instance
 QTR qtrSensors;
 
+// Logger and OTA instances
+Logger logger;
+OTA ota;
+
 // Sensor pins
 const int sensorFL = 1; // Front Left
 const int sensorFR = 2; // Front Right
 const int sensorBL = 4; // Back Left
 const int sensorBR = 5; // Back Right
+
+// Modes and logging level
+bool devMode = true;
+bool Fight = false;
+int Log = 0; // 0 = None, 1 = Errors, 2 = All
 
 void setup() {
   Serial.begin(115200);
@@ -230,9 +113,20 @@ void setup() {
   // Initialize sensors
   qtrSensors.init(sensorFL, sensorFR, sensorBL, sensorBR);
 
+  // Initialize logger
+  logger.init(Fight, devMode, true, "SSID", "PASSWORD");
+
+  // Initialize OTA with Wi-Fi credentials
+  const char* ssid = "SSID";
+  const char* password = "PASSWORD";
+  if (ota.init(Fight, devMode, Log, ssid, password) == 0) {
+    Serial.println("OTA Initialized");
+  } else {
+    Serial.println("OTA Initialization Failed");
+  }
+
   // Indicate ready status with LED
   pinMode(12, OUTPUT);
-  pinMode(11, OUTPUT);
   digitalWrite(12, HIGH);
   delay(250);
   digitalWrite(12, LOW);
@@ -242,29 +136,45 @@ void setup() {
 }
 
 void loop() {
+  // OTA check
+  ota.check();
+  Serial.printf("OTA Status: %s\n", ota.isConnected() ? "Connected" : "Disconnected");
+
   // Check each sensor's reading
   bool edgeFL = qtrSensors.medir(sensorFL);  // Front Left
   bool edgeFR = qtrSensors.medir(sensorFR);  // Front Right
   bool edgeBL = qtrSensors.medir(sensorBL);  // Back Left
   bool edgeBR = qtrSensors.medir(sensorBR);  // Back Right
 
+  // Log QTR sensor readings
+  Serial.printf("QTR Sensor States - FL: %d, FR: %d, BL: %d, BR: %d\n", edgeFL, edgeFR, edgeBL, edgeBR);
+  logger.logMessage(Fight, devMode, Log, 1, "Reading sensors for edge detection");
+
   // State control based on sensors
   if (!edgeFL && !edgeFR && !edgeBL && !edgeBR) {
-    // All sensors detect safe ground
     EstadoNormal();
-  } else if (!edgeFR) {
-    EstadoQTR_FR_A();
-    delay(400);
-    EstadoQTR_FR_B();
+  } else if (!edgeFL && !edgeFR) {
+    EstadoQTR_FL_FR_A();  // 180° turn
+  } else if (!edgeBL && !edgeBR) {
+    EstadoQTR_BL_BR_B();  // 180° turn
   } else if (!edgeFL) {
-    EstadoQTR_FL_A();
-    delay(400);
-    EstadoQTR_FL_B();
-  } else if (!edgeBL || !edgeBR) {
-    EstadoEnemigoEncontrado();
+    EstadoQTR_FL_A();  // 180° turn
+  } else if (!edgeFR) {
+    EstadoQTR_FR_A();  // 180° turn
+  } else if (!edgeBL) {
+    EstadoQTR_BL_B();  // 180° turn
+  } else if (!edgeBR) {
+    EstadoQTR_BR_B();  // 180° turn
   } else {
     EstadoCero();
   }
+
+  // Disable WiFi if in Fight mode or not in devMode
+  if (Fight || !devMode) {
+    disableWiFi();
+  }
+
+  delay(50); // Adjust delay as needed
 }
 
 void EstadoNormal() {
@@ -272,6 +182,8 @@ void EstadoNormal() {
   motorFR.drive(50);
   motorBL.drive(50);
   motorBR.drive(50);
+  Serial.printf("EstadoNormal - Motors: FL=50, FR=50, BL=50, BR=50\n");
+  logger.logMessage(Fight, devMode, Log, 2, "Driving forward - Safe ground detected");
 }
 
 void EstadoCero() {
@@ -279,40 +191,85 @@ void EstadoCero() {
   motorFR.drive(0);
   motorBL.drive(0);
   motorBR.drive(0);
+  Serial.printf("EstadoCero - Motors: FL=0, FR=0, BL=0, BR=0\n");
+  logger.logMessage(Fight, devMode, Log, 2, "Stopping motors");
 }
 
-void EstadoEnemigoEncontrado() {
-  motorFL.drive(50);
-  motorFR.drive(50);
-  motorBL.drive(50);
-  motorBR.drive(50);
+// Rotate 180° when both Front sensors detect the line
+void EstadoQTR_FL_FR_A() {
+  motorFL.drive(-50);  // Reverse front-left motor
+  motorFR.drive(-50);  // Reverse front-right motor
+  motorBL.drive(50);   // Forward back-left motor
+  motorBR.drive(50);   // Forward back-right motor
+  Serial.printf("EstadoQTR_FL_FR_A - Motors: FL=-50, FR=-50, BL=50, BR=50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Front edge detected by both front sensors");
 }
 
+// Rotate 180° when both Back sensors detect the line
+void EstadoQTR_BL_BR_B() {
+  motorFL.drive(50);   // Forward front-left motor
+  motorFR.drive(50);   // Forward front-right motor
+  motorBL.drive(-50);  // Reverse back-left motor
+  motorBR.drive(-50);  // Reverse back-right motor
+  Serial.printf("EstadoQTR_BL_BR_B - Motors: FL=50, FR=50, BL=-50, BR=-50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Back edge detected by both back sensors");
+}
+
+// Rotate 180° when Front Left sensor detects the line
 void EstadoQTR_FL_A() {
   motorFL.drive(-50);
   motorFR.drive(50);
-  motorBL.drive(-50);
-  motorBR.drive(50);
-}
-
-void EstadoQTR_FL_B() {
-  motorFL.drive(50);
-  motorFR.drive(-50);
   motorBL.drive(50);
   motorBR.drive(-50);
+  Serial.printf("EstadoQTR_FL_A - Motors: FL=-50, FR=50, BL=50, BR=-50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Front Left sensor");
 }
 
+// Rotate 180° when Front Right sensor detects the line
 void EstadoQTR_FR_A() {
   motorFL.drive(50);
   motorFR.drive(-50);
-  motorBL.drive(50);
-  motorBR.drive(-50);
-}
-
-void EstadoQTR_FR_B() {
-  motorFL.drive(-50);
-  motorFR.drive(50);
   motorBL.drive(-50);
   motorBR.drive(50);
+  Serial.printf("EstadoQTR_FR_A - Motors: FL=50, FR=-50, BL=-50, BR=50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Front Right sensor");
 }
-*/
+
+// Rotate 180° when Back Left sensor detects the line
+void EstadoQTR_BL_B() {
+  motorFL.drive(50);
+  motorFR.drive(-50);
+  motorBL.drive(-50);
+  motorBR.drive(50);
+  Serial.printf("EstadoQTR_BL_B - Motors: FL=50, FR=-50, BL=-50, BR=50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Back Left sensor");
+}
+
+// Rotate 180° when Back Right sensor detects the line
+void EstadoQTR_BR_B() {
+  motorFL.drive(-50);
+  motorFR.drive(50);
+  motorBL.drive(50);
+  motorBR.drive(-50);
+  Serial.printf("EstadoQTR_BR_B - Motors: FL=-50, FR=50, BL=50, BR=-50\n");
+  delay(600);
+  EstadoNormal();
+  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Back Right sensor");
+}
+
+void disableWiFi() {
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  btStop();
+  Serial.println("WiFi Disabled");
+}
