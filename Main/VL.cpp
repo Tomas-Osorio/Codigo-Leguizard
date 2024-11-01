@@ -123,3 +123,52 @@ int* VL::measure() {
     return measurements;
 }
 */
+/*este programa de vl anda directamente sin uso de librerias
+#include <Wire.h>
+#include <PCF8574.h>
+#include <Adafruit_VL53L0X.h>
+
+// Initialize PCF8574 at a default address (e.g., 0x20)
+PCF8574 pcf8574(0x20);  
+
+// Initialize VL53L0X sensor
+Adafruit_VL53L0X vl53 = Adafruit_VL53L0X();
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(36, 35);  // Set up I2C on SDA (IO36) and SCL (IO35)
+
+  // Initialize the PCF8574
+  if (!pcf8574.begin()) {
+    Serial.println("PCF8574 not found. Check wiring!");
+    while (1);
+  }
+
+  // Set P5 on PCF8574 high to enable VL53L0X (turning on the sensor)
+  pcf8574.write(5, HIGH);
+  delay(10);  // Give the sensor time to start up
+
+  // Initialize the VL53L0X sensor
+  if (!vl53.begin()) {
+    Serial.println("Failed to initialize VL53L0X sensor. Check wiring!");
+    while (1);
+  }
+  Serial.println("VL53L0X sensor initialized!");
+}
+
+void loop() {
+  VL53L0X_RangingMeasurementData_t measure;
+
+  // Take a distance measurement
+  vl53.rangingTest(&measure, false);  // Pass 'true' to get debug info
+
+  if (measure.RangeStatus != 4) {  // 4 means out of range
+    Serial.print("Distance (mm): "); 
+    Serial.println(measure.RangeMilliMeter);
+  } else {
+    Serial.println("Out of range");
+  }
+
+  delay(500);  // Delay between readings
+}
+*/
