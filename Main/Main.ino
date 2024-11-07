@@ -1,39 +1,69 @@
-#include "VL.h"
+codigo pantalla:(no esta adaptado al esp32)
+#include <SoftwareSerial.h>
 
-VL vlSensors;
+#define RX_PIN 2  // RX to Nextion TX
+#define TX_PIN 3  // TX to Nextion RX
+
+SoftwareSerial nextionSerial(RX_PIN, TX_PIN);
+
+int buttonState = 0;  // Variable to toggle
 
 void setup() {
-    Serial.begin(115200);
-    vlSensors.init();
+  nextionSerial.begin(9600);
+  Serial.begin(9600);
+  Serial.println("Starting communication with Nextion...");
 }
 
 void loop() {
-    int* distances = vlSensors.measure();
-    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
-    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
-    delay(500);
-}
-/*Anda solo un Vl
-#include "VL.h"
+  // Check if data is coming from Nextion
+  if (nextionSerial.available()) {
+    // Read the first byte
+    if (nextionSerial.read() == 0x23) {
+      delay(10);  // Small delay to allow next bytes to arrive
 
-VL vlSensors;
+      // Check for the next two bytes in sequence
+      if (nextionSerial.available() >= 2) {
+        if (nextionSerial.read() == 0x02 && nextionSerial.read() == 0x54) {
+          // Toggle the buttonState variable
+          buttonState = !buttonState;
+          
+          // Print the updated state
+          Serial.print("Button State toggled to: ");
+          Serial.println(buttonState);
+        }
+      }
+    }
+  }
+}
+/*#include <Wire.h>
+#include <VL53L1X.h>
+
+VL53L1X sensor;
 
 void setup() {
-    Serial.begin(115200);
-    vlSensors.init();
+  Serial.begin(115200);
+
+  // Initialize I2C on custom pins
+  Wire.begin(36, 35);  // SDA on 36, SCL on 35
+
+  // Initialize the sensor
+  if (!sensor.init()) {
+    Serial.println("Failed to detect and initialize sensor!");
+    while (1);
+  }
+  
+  sensor.setDistanceMode(VL53L1X::Long);
+  sensor.setMeasurementTimingBudget(50000); // 50ms for each measurement
+  sensor.startContinuous(50);
 }
 
 void loop() {
-    int* distances = vlSensors.measure();
-    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
-    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
-    delay(500);
+  Serial.print("Distance (mm): ");
+  Serial.println(sensor.read());
+  delay(100);
 }
-*/
 
-/*Expicacion de los vl para chatgpt: i need you to make me a program that search the direction i2c of 2 vl5320x laser sensors.Their xshut pin si conecte to pins out 5 and 6 from a pin expansor called PCF8574.My I2c pins not only are connected to the vl sda and scl they also are conected to this expansor. So i nee a program to read this sensors measures and define the one in the pin 6 right sensor and the one in pin 5 left sensor. I need to know the measures they have specifically its essential. Im working with an esp32 s3 wroom u1 n8r8 and im using this custom libraries:
-
-/*Este codigo qtr anda:
+Este codigo qtr anda:
 #include <QTRSensors.h>
 
 QTRSensors qtr;  // Create an instance of QTRSensors
