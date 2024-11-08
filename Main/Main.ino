@@ -1,4 +1,100 @@
-codigo pantalla:(no esta adaptado al esp32)
+#include <Wire.h>
+#include <VL53L1X.h>
+#include <PCF8574.h>
+
+VL53L1X sensor1;
+VL53L1X sensor2;
+PCF8574 pcf8574(0x20);  // PCF8574 address
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize I2C on custom pins
+  Wire.begin(36, 35);  // SDA on 36, SCL on 35
+  pcf8574.begin();
+
+  // Step 1: Disable both sensors by setting both XSHUT lines to LOW
+  pcf8574.write(6, LOW);  // XSHUT for first sensor
+  pcf8574.write(4, LOW);  // XSHUT for second sensor
+  delay(10);              // Short delay to ensure both are off
+
+  // Step 2: Enable the first sensor (XSHUT 6 HIGH)
+  Serial.println("Enabling first sensor...");
+  pcf8574.write(6, HIGH); 
+  delay(50);              // Delay for the sensor to power up
+  
+  // Initialize sensor1 (assuming it’s at address 0x29)
+  if (!sensor1.init()) {
+    Serial.println("Failed to initialize sensor 1 at 0x29!");
+    while (1);
+  }
+  Serial.println("Sensor 1 initialized at 0x29.");
+  sensor1.setDistanceMode(VL53L1X::Long);
+  sensor1.setMeasurementTimingBudget(50000);
+  sensor1.startContinuous(50);
+
+  // Step 3: Disable the first sensor, enable the second sensor (XSHUT 4 HIGH)
+  pcf8574.write(6, LOW);  // Temporarily disable first sensor
+  delay(10);              // Ensure it's powered down
+  Serial.println("Enabling second sensor...");
+  pcf8574.write(4, HIGH); 
+  delay(50);              // Delay for the sensor to power up
+  
+  // Initialize sensor2 (assuming it’s at address 0x30)
+  if (!sensor2.init()) {
+    Serial.println("Failed to initialize sensor 2 at 0x30!");
+    while (1);
+  }
+  Serial.println("Sensor 2 initialized at 0x30.");
+  sensor2.setDistanceMode(VL53L1X::Long);
+  sensor2.setMeasurementTimingBudget(50000);
+  sensor2.startContinuous(50);
+
+  Serial.println("Both sensors initialized successfully.");
+}
+
+void loop() {
+  // Read and print distance from sensor 1
+  Serial.print("Sensor 1 Distance (mm): ");
+  Serial.println(sensor1.read());
+
+  // Read and print distance from sensor 2
+  Serial.print("Sensor 2 Distance (mm): ");
+  Serial.println(sensor2.read());
+
+  delay(100);
+}
+
+
+/*#include <Wire.h>
+#include <VL53L1X.h>
+
+VL53L1X sensor;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize I2C on custom pins
+  Wire.begin(36, 35);  // SDA on 36, SCL on 35
+
+  // Initialize the sensor
+  if (!sensor.init()) {
+    Serial.println("Failed to detect and initialize sensor!");
+    while (1);
+  }
+  
+  sensor.setDistanceMode(VL53L1X::Long);
+  sensor.setMeasurementTimingBudget(50000); // 50ms for each measurement
+  sensor.startContinuous(50);
+}
+
+void loop() {
+  Serial.print("Distance (mm): ");
+  Serial.println(sensor.read());
+  delay(100);
+}
+*/
+/*codigo pantalla:(no esta adaptado al esp32)
 #include <SoftwareSerial.h>
 
 #define RX_PIN 2  // RX to Nextion TX
@@ -34,7 +130,7 @@ void loop() {
       }
     }
   }
-}
+}*/
 /*#include <Wire.h>
 #include <VL53L1X.h>
 
@@ -62,7 +158,7 @@ void loop() {
   Serial.println(sensor.read());
   delay(100);
 }
-
+*//*
 Este codigo qtr anda:
 #include <QTRSensors.h>
 
@@ -100,7 +196,7 @@ void loop() {
 
     // Add a delay for readability
     delay(500);
-}
+}*//*
 MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO
 #include <MotorDriver.h>
 #include <QTR.h>
@@ -303,3 +399,4 @@ void disableWiFi() {
   btStop();
   Serial.println("WiFi Disabled");
 }
+*/
