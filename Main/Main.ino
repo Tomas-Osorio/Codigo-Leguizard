@@ -1,4 +1,284 @@
-#include <Wire.h>
+/*#include <Wire.h>
+#include <VL53L1X.h>
+#include <PCF8574.h>
+
+VL53L1X sensor1;
+VL53L1X sensor2;
+
+PCF8574 pcf(0x20);  // Declare PCF8574 object with the address 0x20
+
+#define SDA_PIN 36
+#define SCL_PIN 35
+
+void setup() {
+  Serial.begin(115200);
+  
+  Wire.begin(SDA_PIN, SCL_PIN);  // Initialize I2C with custom SDA/SCL pins
+
+  // Initialize the PCF8574 I/O expander
+  if (!pcf.begin()) {
+    Serial.println("Failed to initialize PCF8574!");
+    while (1);  // Infinite loop if initialization fails
+  }
+
+  // Power off both sensors initially
+  pcf.write(6, HIGH); // Pin for sensor 1
+  pcf.write(3, HIGH); // Pin for sensor 2
+  delay(100);
+
+  // Initialize sensor 1
+  pcf.write(6, LOW);  // Power on sensor 1
+  delay(100);         // Increased delay to allow sensor to stabilize
+  sensor1.setTimeout(500);
+  if (!sensor1.init()) {
+    Serial.println("Failed to initialize sensor 1!");
+    while (1);
+  }
+  sensor1.setAddress(0x29);  // Default I2C address for sensor 1
+  delay(10);                  // Allow time for address set
+  pcf.write(6, HIGH);  // Power off sensor 1
+
+  // Initialize sensor 2 with a different address
+  pcf.write(3, LOW);  // Power on sensor 2
+  delay(100);         // Increased delay to allow sensor to stabilize
+  sensor2.setTimeout(500);
+  if (!sensor2.init()) {
+    Serial.println("Failed to initialize sensor 2!");
+    while (1);
+  }
+  sensor2.setAddress(0x30);  // New I2C address for sensor 2
+  delay(10);                  // Allow time for address set
+  pcf.write(3, HIGH);  // Power off sensor 2
+
+  Serial.println("Both sensors initialized successfully.");
+}
+
+void loop() {
+  // Sensor 1 measurement
+  pcf.write(6, LOW);  // Power on sensor 1
+  delay(50);
+  sensor1.startContinuous(500);  // Start continuous ranging for sensor 1
+  delay(50);  // Wait for data to be ready
+  int distance1 = sensor1.read();
+  sensor1.stopContinuous();  // Stop continuous ranging
+  if (distance1 != 0) {
+    Serial.print("Sensor 1 Distance: ");
+    Serial.print(distance1);
+    Serial.println(" mm");
+  } else {
+    Serial.println("Sensor 1 error!");
+  }
+  pcf.write(6, HIGH);  // Power off sensor 1
+
+  // Sensor 2 measurement
+  pcf.write(3, LOW);  // Power on sensor 2
+  delay(50);
+  sensor2.startContinuous(500);  // Start continuous ranging for sensor 2
+  delay(50);  // Wait for data to be ready
+  int distance2 = sensor2.read();
+  sensor2.stopContinuous();  // Stop continuous ranging
+  if (distance2 != 0) {
+    Serial.print("Sensor 2 Distance: ");
+    Serial.print(distance2);
+    Serial.println(" mm");
+  } else {
+    Serial.println("Sensor 2 error!");
+  }
+  pcf.write(3, HIGH);  // Power off sensor 2
+
+  delay(500);  // Wait before the next measurement
+}
+*/#include <MotorDriver.h>
+#include <QTRSensors.h>
+#include <SoftwareSerial.h>
+
+#define RX_PIN 2  // RX to Nextion TX
+#define TX_PIN 3  // TX to Nextion RX
+
+SoftwareSerial nextionSerial(RX_PIN, TX_PIN);
+MotorDriver motorFL(39);  // Front Left
+MotorDriver motorFR(45);  // Front Right
+MotorDriver motorBL(47);  // Back Left
+MotorDriver motorBR(9);   // Back Right
+QTRSensors qtr;
+
+const uint8_t sensorPins[] = {4, 5, 1, 2}; // Top Left, Bottom Left, Top Right, Bottom Right
+int buttonState = 0;  
+bool systemActive = false;
+unsigned long lastToggleTime = 0;
+
+void setup() {
+  nextionSerial.begin(9600);
+  Serial.begin(115200);
+  Serial.println("Starting communication with Nextion...");
+
+  motorFL.init();
+  motorFR.init();
+  motorBL.init();
+  motorBR.init();
+
+  qtr.setTypeRC();
+  qtr.setSensorPins(sensorPins, sizeof(sensorPins) / sizeof(sensorPins[0]));
+
+  pinMode(12, OUTPUT);
+  digitalWrite(12, HIGH);
+  delay(250);
+  digitalWrite(12, LOW);
+  delay(250);
+  digitalWrite(12, HIGH);
+  delay(250);
+}
+
+void loop() {
+  if (nextionSerial.available()) {
+    if (nextionSerial.read() == 0x23) {
+      delay(10);
+      if (nextionSerial.available() >= 2) {
+        if (nextionSerial.read() == 0x02 && nextionSerial.read() == 0x54) {
+          buttonState = !buttonState;
+          Serial.print("Button State toggled to: ");
+          Serial.println(buttonState);
+
+          if (buttonState == 1) {
+            lastToggleTime = millis();
+          } else {
+            systemActive = false;
+            stopMotors();
+          }
+        }
+      }
+    }
+  }
+
+  if (buttonState == 1 && !systemActive && millis() - lastToggleTime >= 5000) {
+    systemActive = true;
+    Serial.println("System activated after 5-second delay");
+  }
+
+  if (systemActive) {
+    executeMainCode();
+  }
+
+  delay(50);
+}
+
+void executeMainCode() {
+  uint16_t sensorValues[4];
+  qtr.read(sensorValues);
+
+  bool edgeFL = sensorValues[0] <= 500;  // Top Left (Pin 4)
+  bool edgeBL = sensorValues[1] <= 500;  // Bottom Left (Pin 5)
+  bool edgeFR = sensorValues[2] <= 500;  // Top Right (Pin 1)
+  bool edgeBR = sensorValues[3] <= 500;  // Bottom Right (Pin 2)
+
+  Serial.printf("QTR Sensor States - FL: %d, FR: %d, BL: %d, BR: %d\n", edgeFL, edgeFR, edgeBL, edgeBR);
+
+  if (!edgeFL && !edgeFR && !edgeBL && !edgeBR) {
+    EstadoNormal();
+  } else if (!edgeFL && !edgeFR) {
+    EstadoQTR_FL_FR_A();
+  } else if (!edgeBL && !edgeBR) {
+    EstadoQTR_BL_BR_B();
+  } else if (!edgeFL) {
+    EstadoQTR_FL_A();
+  } else if (!edgeFR) {
+    EstadoQTR_FR_A();
+  } else if (!edgeBL) {
+    EstadoQTR_BL_B();
+  } else if (!edgeBR) {
+    EstadoQTR_BR_B();
+  } else {
+    EstadoCero();
+  }
+}
+
+void EstadoNormal() {
+  motorFL.drive(20);
+  motorFR.drive(20);
+  motorBL.drive(20);
+  motorBR.drive(20);
+  Serial.printf("EstadoNormal - Motors: FL=20, FR=20, BL=20, BR=20\n");
+}
+
+void EstadoCero() {
+  motorFL.drive(0);
+  motorFR.drive(0);
+  motorBL.drive(0);
+  motorBR.drive(0);
+  Serial.printf("EstadoCero - Motors: FL=0, FR=0, BL=0, BR=0\n");
+}
+
+void EstadoQTR_FL_FR_A() {
+  motorFL.drive(-20);
+  motorFR.drive(-20);
+  motorBL.drive(20);
+  motorBR.drive(20);
+  Serial.printf("EstadoQTR_FL_FR_A - Motors: FL=-20, FR=-20, BL=20, BR=20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void EstadoQTR_BL_BR_B() {
+  motorFL.drive(20);
+  motorFR.drive(20);
+  motorBL.drive(-20);
+  motorBR.drive(-20);
+  Serial.printf("EstadoQTR_BL_BR_B - Motors: FL=20, FR=20, BL=-20, BR=-20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void EstadoQTR_FL_A() {
+  motorFL.drive(-20);
+  motorFR.drive(20);
+  motorBL.drive(20);
+  motorBR.drive(-20);
+  Serial.printf("EstadoQTR_FL_A - Motors: FL=-20, FR=20, BL=20, BR=-20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void EstadoQTR_FR_A() {
+  motorFL.drive(20);
+  motorFR.drive(-20);
+  motorBL.drive(-20);
+  motorBR.drive(20);
+  Serial.printf("EstadoQTR_FR_A - Motors: FL=20, FR=-20, BL=-20, BR=20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void EstadoQTR_BL_B() {
+  motorFL.drive(20);
+  motorFR.drive(-20);
+  motorBL.drive(-20);
+  motorBR.drive(20);
+  Serial.printf("EstadoQTR_BL_B - Motors: FL=20, FR=-20, BL=-20, BR=20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void EstadoQTR_BR_B() {
+  motorFL.drive(-20);
+  motorFR.drive(20);
+  motorBL.drive(20);
+  motorBR.drive(-20);
+  Serial.printf("EstadoQTR_BR_B - Motors: FL=-20, FR=20, BL=20, BR=-20\n");
+  delay(600);
+  EstadoNormal();
+}
+
+void stopMotors() {
+  motorFL.drive(0);
+  motorFR.drive(0);
+  motorBL.drive(0);
+  motorBR.drive(0);
+  Serial.println("Motors stopped due to buttonState change.");
+}
+
+
+
+/*#include <Wire.h>
 #include <VL53L1X.h>
 #include <PCF8574.h>
 
@@ -63,9 +343,7 @@ void loop() {
   Serial.println(sensor2.read());
 
   delay(100);
-}
-
-
+}*/
 /*#include <Wire.h>
 #include <VL53L1X.h>
 
