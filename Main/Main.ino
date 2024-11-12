@@ -23,7 +23,7 @@ void setup() {
 
   // Power off both sensors initially
   pcf.write(6, HIGH); // Pin for sensor 1
-  pcf.write(3, HIGH); // Pin for sensor 2
+  pcf.write(4, HIGH); // Pin for sensor 2
   delay(100);
 
   // Initialize sensor 1
@@ -39,7 +39,7 @@ void setup() {
   pcf.write(6, HIGH);  // Power off sensor 1
 
   // Initialize sensor 2 with a different address
-  pcf.write(3, LOW);  // Power on sensor 2
+  pcf.write(4, LOW);  // Power on sensor 2
   delay(100);         // Increased delay to allow sensor to stabilize
   sensor2.setTimeout(500);
   if (!sensor2.init()) {
@@ -48,7 +48,7 @@ void setup() {
   }
   sensor2.setAddress(0x30);  // New I2C address for sensor 2
   delay(10);                  // Allow time for address set
-  pcf.write(3, HIGH);  // Power off sensor 2
+  pcf.write(4, HIGH);  // Power off sensor 2
 
   Serial.println("Both sensors initialized successfully.");
 }
@@ -71,7 +71,7 @@ void loop() {
   pcf.write(6, HIGH);  // Power off sensor 1
 
   // Sensor 2 measurement
-  pcf.write(3, LOW);  // Power on sensor 2
+  pcf.write(4, LOW);  // Power on sensor 2
   delay(50);
   sensor2.startContinuous(500);  // Start continuous ranging for sensor 2
   delay(50);  // Wait for data to be ready
@@ -84,11 +84,11 @@ void loop() {
   } else {
     Serial.println("Sensor 2 error!");
   }
-  pcf.write(3, HIGH);  // Power off sensor 2
+  pcf.write(4, HIGH);  // Power off sensor 2
 
   delay(500);  // Wait before the next measurement
-}
-*/#include <MotorDriver.h>
+}*/
+#include <MotorDriver.h>
 #include <QTRSensors.h>
 #include <SoftwareSerial.h>
 
@@ -276,9 +276,8 @@ void stopMotors() {
   Serial.println("Motors stopped due to buttonState change.");
 }
 
-
-
-/*#include <Wire.h>
+/*2 VL try
+#include <Wire.h>
 #include <VL53L1X.h>
 #include <PCF8574.h>
 
@@ -344,34 +343,6 @@ void loop() {
 
   delay(100);
 }*/
-/*#include <Wire.h>
-#include <VL53L1X.h>
-
-VL53L1X sensor;
-
-void setup() {
-  Serial.begin(115200);
-
-  // Initialize I2C on custom pins
-  Wire.begin(36, 35);  // SDA on 36, SCL on 35
-
-  // Initialize the sensor
-  if (!sensor.init()) {
-    Serial.println("Failed to detect and initialize sensor!");
-    while (1);
-  }
-  
-  sensor.setDistanceMode(VL53L1X::Long);
-  sensor.setMeasurementTimingBudget(50000); // 50ms for each measurement
-  sensor.startContinuous(50);
-}
-
-void loop() {
-  Serial.print("Distance (mm): ");
-  Serial.println(sensor.read());
-  delay(100);
-}
-*/
 /*codigo pantalla:(no esta adaptado al esp32)
 #include <SoftwareSerial.h>
 
@@ -409,7 +380,8 @@ void loop() {
     }
   }
 }*/
-/*#include <Wire.h>
+/*UN SOLO VL
+#include <Wire.h>
 #include <VL53L1X.h>
 
 VL53L1X sensor;
