@@ -9,7 +9,7 @@ PCF8574 pcf(0x20);  // Declare PCF8574 object with the address 0x20
 
 #define SDA_PIN 36
 #define SCL_PIN 35
-
+}
 void setup() {
   Serial.begin(115200);
   
@@ -92,8 +92,8 @@ void loop() {
 #include <QTRSensors.h>
 #include <SoftwareSerial.h>
 
-#define RX_PIN 2  // RX to Nextion TX
-#define TX_PIN 3  // TX to Nextion RX
+#define RX_PIN 44  // RX to Nextion TX
+#define TX_PIN 43  // TX to Nextion RX
 
 SoftwareSerial nextionSerial(RX_PIN, TX_PIN);
 MotorDriver motorFL(39);  // Front Left
