@@ -1,275 +1,147 @@
-#include "VL.h"
-
-VL vlSensors;
-
-void setup() {
-    Serial.begin(115200);
-    vlSensors.init();
-}
-
-void loop() {
-    int* distances = vlSensors.measure();
-    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
-    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
-    delay(500);
-}
-/*Anda solo un Vl
-#include "VL.h"
-
-VL vlSensors;
-
-void setup() {
-    Serial.begin(115200);
-    vlSensors.init();
-}
-
-void loop() {
-    int* distances = vlSensors.measure();
-    Serial.printf("Left sensor distance: %d mm\n", distances[0]);
-    Serial.printf("Right sensor distance: %d mm\n", distances[1]);
-    delay(500);
-}
-*/
-
-/*Expicacion de los vl para chatgpt: i need you to make me a program that search the direction i2c of 2 vl5320x laser sensors.Their xshut pin si conecte to pins out 5 and 6 from a pin expansor called PCF8574.My I2c pins not only are connected to the vl sda and scl they also are conected to this expansor. So i nee a program to read this sensors measures and define the one in the pin 6 right sensor and the one in pin 5 left sensor. I need to know the measures they have specifically its essential. Im working with an esp32 s3 wroom u1 n8r8 and im using this custom libraries:
-
-/*Este codigo qtr anda:
 #include <QTRSensors.h>
+#include "MotorDriver.h"
+#include <HardwareSerial.h>
 
-QTRSensors qtr;  // Create an instance of QTRSensors
+// Motor pins
+#define LEFT_FRONT_MOTOR_PIN 39
+#define RIGHT_FRONT_MOTOR_PIN 9
+#define LEFT_BACK_MOTOR_PIN 45
+#define RIGHT_BACK_MOTOR_PIN 47
 
-const uint8_t sensorPins[] = {4, 5, 1, 2}; // Pins for Top Left, Bottom Left, Top Right, Bottom Right
+// QTR Sensor pins
+const uint8_t sensorPins[] = {4, 5, 1, 2}; // Front Left, Back Left, Front Right, Back Right
+
+// Sensor thresholds
+const uint16_t WHITE_THRESHOLD = 500;
+
+// QTR Sensor object
+QTRSensors qtr;
+
+// Motor objects
+MotorDriver leftFrontMotor(LEFT_FRONT_MOTOR_PIN);
+MotorDriver rightFrontMotor(RIGHT_FRONT_MOTOR_PIN);
+MotorDriver leftBackMotor(LEFT_BACK_MOTOR_PIN);
+MotorDriver rightBackMotor(RIGHT_BACK_MOTOR_PIN);
+
+// Nextion communication pins
+#define RX_PIN 16  // RX to Nextion TX
+#define TX_PIN 17  // TX to Nextion RX
+
+HardwareSerial nextionSerial(1);
+
+// Button state
+volatile int buttonState = 0; // Variable to toggle
+bool programRunning = false;
 
 void setup() {
+    // Initialize serial communication
     Serial.begin(115200);
+    nextionSerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
+    Serial.println("Starting communication with Nextion...");
 
-    // Initialize the QTR sensors with the specified pins
-    qtr.setTypeRC();  // Sets sensor type to RC for digital sensors
+    // Initialize QTR sensors
+    qtr.setTypeRC();
     qtr.setSensorPins(sensorPins, sizeof(sensorPins) / sizeof(sensorPins[0]));
+
+    // Initialize motors
+    leftFrontMotor.init();
+    rightFrontMotor.init();
+    leftBackMotor.init();
+    rightBackMotor.init();
 }
 
 void loop() {
-    // Array to store readings from each sensor
+    // Check Nextion data
+    if (nextionSerial.available()) {
+        handleNextionInput();
+    }
+
+    // If program is not running, do nothing
+    if (!programRunning) {
+        stopMotors();
+        return;
+    }
+
+    // Array to store sensor readings
     uint16_t sensorValues[4];
-    
+
     // Read sensor values
     qtr.read(sensorValues);
 
-    // Print the results to the Serial Monitor
-    Serial.print("Top Left (Pin 4): ");
-    Serial.println(sensorValues[0] > 500 ? "White" : "Black");
+    // Interpret sensor readings
+    bool frontLeft = sensorValues[0] > WHITE_THRESHOLD;
+    bool backLeft = sensorValues[1] > WHITE_THRESHOLD;
+    bool frontRight = sensorValues[2] > WHITE_THRESHOLD;
+    bool backRight = sensorValues[3] > WHITE_THRESHOLD;
 
-    Serial.print("Bottom Left (Pin 5): ");
-    Serial.println(sensorValues[1] > 500 ? "White" : "Black");
+    // Line detection and response logic
+    if (frontLeft && frontRight) {
+        driveMotors(-20, -20, 20, 20); // Sharp clockwise turn
+        delay(300);
+        driveStraight();
+    } else if (backLeft && backRight) {
+        driveMotors(20, 20, -20, -20); // Sharp counter-clockwise turn
+        delay(300);
+        driveStraight();
+    } else if (frontLeft) {
+        driveMotors(-20, -10, 20, 10); // Rotate clockwise
+        delay(300);
+        driveStraight();
+    } else if (frontRight) {
+        driveMotors(-10, -20, 10, 20); // Rotate counter-clockwise
+        delay(300);
+        driveStraight();
+    } else if (backLeft) {
+        driveMotors(-20, -10, 20, 10); // Rotate clockwise
+        delay(300);
+        driveStraight();
+    } else if (backRight) {
+        driveMotors(-10, -20, 10, 20); // Rotate counter-clockwise
+        delay(300);
+        driveStraight();
+    } else {
+        driveStraight();
+    }
 
-    Serial.print("Top Right (Pin 1): ");
-    Serial.println(sensorValues[2] > 500 ? "White" : "Black");
-
-    Serial.print("Bottom Right (Pin 2): ");
-    Serial.println(sensorValues[3] > 500 ? "White" : "Black");
-
-    // Add a delay for readability
-    delay(500);
-}
-MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO MAIN CHETO
-#include <MotorDriver.h>
-#include <QTR.h>
-#include <Logger.h>
-#include <OTAPrograming.h>
-
-// Motor instances
-MotorDriver motorFL(39);  // Front Left
-MotorDriver motorFR(45);  // Front Right
-MotorDriver motorBL(47);  // Back Left
-MotorDriver motorBR(9);   // Back Right
-
-// QTR sensor instance
-QTR qtrSensors;
-
-// Logger and OTA instances
-Logger logger;
-OTA ota;
-
-// Sensor pins
-const int sensorFL = 1; // Front Left
-const int sensorFR = 2; // Front Right
-const int sensorBL = 4; // Back Left
-const int sensorBR = 5; // Back Right
-
-// Modes and logging level
-bool devMode = true;
-bool Fight = false;
-int Log = 0; // 0 = None, 1 = Errors, 2 = All
-
-void setup() {
-  Serial.begin(115200);
-
-  // Initialize motors
-  motorFL.init();
-  motorFR.init();
-  motorBL.init();
-  motorBR.init();
-
-  // Initialize sensors
-  qtrSensors.init(sensorFL, sensorFR, sensorBL, sensorBR);
-
-  // Initialize logger
-  logger.init(Fight, devMode, true, "SSID", "PASSWORD");
-
-  // Initialize OTA with Wi-Fi credentials
-  const char* ssid = "SSID";
-  const char* password = "PASSWORD";
-  if (ota.init(Fight, devMode, Log, ssid, password) == 0) {
-    Serial.println("OTA Initialized");
-  } else {
-    Serial.println("OTA Initialization Failed");
-  }
-
-  // Indicate ready status with LED
-  pinMode(12, OUTPUT);
-  digitalWrite(12, HIGH);
-  delay(250);
-  digitalWrite(12, LOW);
-  delay(250);
-  digitalWrite(12, HIGH);
-  delay(250);
+    // Add a delay for sensor stability
+    delay(100);
 }
 
-void loop() {
-  // OTA check
-  ota.check();
-  Serial.printf("OTA Status: %s\n", ota.isConnected() ? "Connected" : "Disconnected");
+// Handle Nextion touchscreen input
+void handleNextionInput() {
+    if (nextionSerial.read() == 0x23) {
+        delay(10);
+        if (nextionSerial.available() >= 2) {
+            if (nextionSerial.read() == 0x02 && nextionSerial.read() == 0x54) {
+                buttonState = !buttonState;
 
-  // Check each sensor's reading
-  bool edgeFL = qtrSensors.medir(sensorFL);  // Front Left
-  bool edgeFR = qtrSensors.medir(sensorFR);  // Front Right
-  bool edgeBL = qtrSensors.medir(sensorBL);  // Back Left
-  bool edgeBR = qtrSensors.medir(sensorBR);  // Back Right
-
-  // Log QTR sensor readings
-  Serial.printf("QTR Sensor States - FL: %d, FR: %d, BL: %d, BR: %d\n", edgeFL, edgeFR, edgeBL, edgeBR);
-  logger.logMessage(Fight, devMode, Log, 1, "Reading sensors for edge detection");
-
-  // State control based on sensors
-  if (!edgeFL && !edgeFR && !edgeBL && !edgeBR) {
-    EstadoNormal();
-  } else if (!edgeFL && !edgeFR) {
-    EstadoQTR_FL_FR_A();  // 180° turn
-  } else if (!edgeBL && !edgeBR) {
-    EstadoQTR_BL_BR_B();  // 180° turn
-  } else if (!edgeFL) {
-    EstadoQTR_FL_A();  // 180° turn
-  } else if (!edgeFR) {
-    EstadoQTR_FR_A();  // 180° turn
-  } else if (!edgeBL) {
-    EstadoQTR_BL_B();  // 180° turn
-  } else if (!edgeBR) {
-    EstadoQTR_BR_B();  // 180° turn
-  } else {
-    EstadoCero();
-  }
-
-  // Disable WiFi if in Fight mode or not in devMode
-  if (Fight || !devMode) {
-    disableWiFi();
-  }
-
-  delay(50); // Adjust delay as needed
+                if (buttonState) {
+                    Serial.println("Button toggled ON. Starting program after 5 seconds...");
+                    delay(5000);
+                    programRunning = true;
+                } else {
+                    Serial.println("Button toggled OFF. Stopping program.");
+                    programRunning = false;
+                }
+            }
+        }
+    }
 }
 
-void EstadoNormal() {
-  motorFL.drive(50);
-  motorFR.drive(50);
-  motorBL.drive(50);
-  motorBR.drive(50);
-  Serial.printf("EstadoNormal - Motors: FL=50, FR=50, BL=50, BR=50\n");
-  logger.logMessage(Fight, devMode, Log, 2, "Driving forward - Safe ground detected");
+// Function to stop all motors
+void stopMotors() {
+    driveMotors(0, 0, 0, 0);
 }
 
-void EstadoCero() {
-  motorFL.drive(0);
-  motorFR.drive(0);
-  motorBL.drive(0);
-  motorBR.drive(0);
-  Serial.printf("EstadoCero - Motors: FL=0, FR=0, BL=0, BR=0\n");
-  logger.logMessage(Fight, devMode, Log, 2, "Stopping motors");
+// Function to drive motors in aggressive forward motion
+void driveStraight() {
+    driveMotors(20, 20, 20, 20); // All motors forward
 }
 
-// Rotate 180° when both Front sensors detect the line
-void EstadoQTR_FL_FR_A() {
-  motorFL.drive(-50);  // Reverse front-left motor
-  motorFR.drive(-50);  // Reverse front-right motor
-  motorBL.drive(50);   // Forward back-left motor
-  motorBR.drive(50);   // Forward back-right motor
-  Serial.printf("EstadoQTR_FL_FR_A - Motors: FL=-50, FR=-50, BL=50, BR=50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Front edge detected by both front sensors");
-}
-
-// Rotate 180° when both Back sensors detect the line
-void EstadoQTR_BL_BR_B() {
-  motorFL.drive(50);   // Forward front-left motor
-  motorFR.drive(50);   // Forward front-right motor
-  motorBL.drive(-50);  // Reverse back-left motor
-  motorBR.drive(-50);  // Reverse back-right motor
-  Serial.printf("EstadoQTR_BL_BR_B - Motors: FL=50, FR=50, BL=-50, BR=-50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Back edge detected by both back sensors");
-}
-
-// Rotate 180° when Front Left sensor detects the line
-void EstadoQTR_FL_A() {
-  motorFL.drive(-50);
-  motorFR.drive(50);
-  motorBL.drive(50);
-  motorBR.drive(-50);
-  Serial.printf("EstadoQTR_FL_A - Motors: FL=-50, FR=50, BL=50, BR=-50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Front Left sensor");
-}
-
-// Rotate 180° when Front Right sensor detects the line
-void EstadoQTR_FR_A() {
-  motorFL.drive(50);
-  motorFR.drive(-50);
-  motorBL.drive(-50);
-  motorBR.drive(50);
-  Serial.printf("EstadoQTR_FR_A - Motors: FL=50, FR=-50, BL=-50, BR=50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Front Right sensor");
-}
-
-// Rotate 180° when Back Left sensor detects the line
-void EstadoQTR_BL_B() {
-  motorFL.drive(50);
-  motorFR.drive(-50);
-  motorBL.drive(-50);
-  motorBR.drive(50);
-  Serial.printf("EstadoQTR_BL_B - Motors: FL=50, FR=-50, BL=-50, BR=50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Back Left sensor");
-}
-
-// Rotate 180° when Back Right sensor detects the line
-void EstadoQTR_BR_B() {
-  motorFL.drive(-50);
-  motorFR.drive(50);
-  motorBL.drive(50);
-  motorBR.drive(-50);
-  Serial.printf("EstadoQTR_BR_B - Motors: FL=-50, FR=50, BL=50, BR=-50\n");
-  delay(600);
-  EstadoNormal();
-  logger.logMessage(Fight, devMode, Log, 2, "180º turn - Edge detected by Back Right sensor");
-}
-
-void disableWiFi() {
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  Serial.println("WiFi Disabled");
+// Function to drive motors
+void driveMotors(int leftFront, int rightFront, int leftBack, int rightBack) {
+    leftFrontMotor.drive(leftFront);
+    rightFrontMotor.drive(rightFront);
+    leftBackMotor.drive(leftBack);
+    rightBackMotor.drive(rightBack);
 }
