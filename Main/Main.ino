@@ -24,8 +24,8 @@ MotorDriver leftBackMotor(LEFT_BACK_MOTOR_PIN);
 MotorDriver rightBackMotor(RIGHT_BACK_MOTOR_PIN);
 
 // Nextion communication pins
-#define RX_PIN 16  // RX to Nextion TX
-#define TX_PIN 17  // TX to Nextion RX
+#define RX_PIN 44  // RX to Nextion TX
+#define TX_PIN 43  // TX to Nextion RX
 
 HardwareSerial nextionSerial(1);
 
